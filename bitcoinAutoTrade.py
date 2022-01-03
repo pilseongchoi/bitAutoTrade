@@ -1,9 +1,18 @@
 import time
 import pyupbit
 import datetime
+import requests
 
 access = ""          # 본인 값으로 변경
 secret = ""          # 본인 값으로 변경
+myToken = ""
+
+def post_message(token, channel, text):
+    """슬랙 메시지 전송"""
+    response = requests.post("https://slack.com/api/chat.postMessage",
+        headers={"Authorization": "Bearer "+token},
+        data={"channel": channel,"text": text}
+    )
 
 def get_target_price(ticker, k):
     """변동성 돌파 전략으로 매수 목표가 조회"""
@@ -35,9 +44,10 @@ def get_current_price(ticker):
 # 로그인
 upbit = pyupbit.Upbit(access, secret)
 print("autotrade start")
+# 시작 메세지 슬랙 전송
+post_message(myToken,"#stock", "autotrade start")
 
 portfolio = pyupbit.get_tickers(fiat="KRW")
-arr = 0
 
 # 자동매매 시작
 while True:
@@ -47,17 +57,17 @@ while True:
         end_time = start_time + datetime.timedelta(days=1)
 
         for i in portfolio:    
-            if start_time < now < end_time - datetime.timedelta(seconds=10):
+            if start_time < now < end_time - datetime.timedelta(seconds=300):
                 target_price = get_target_price(i, 0.7)
                 current_price = get_current_price(i)
                 if target_price < current_price:
                     krw = get_balance("KRW")
+                    
                     if krw > 5000:
-                        upbit.buy_market_order(i, krw*0.9995)
-                        time.sleep(60)
-                        upbit.sell_market_order(i, i[4:]*0.9995)
-                        del portfolio[arr]
-                arr = arr + 1                    
+                        buy_result = upbit.buy_market_order(i, krw*0.9995)
+                        post_message(myToken,"#stock", " buy : " +str(buy_result))
+                        
+                        portfolio.remove(i)      
             else:
                 portfolio = pyupbit.get_tickers(fiat="KRW")
                         
@@ -65,4 +75,5 @@ while True:
             
     except Exception as e:
         print(e)
+        post_message(myToken,"#stock", e)
         time.sleep(1)
