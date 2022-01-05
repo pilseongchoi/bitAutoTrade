@@ -3,9 +3,9 @@ import pyupbit
 import datetime
 import requests
 
-access = "oPxp9q8TTiLX6oKLw9XE7LcPOfJmQ5xybjX5ojZs"          # 본인 값으로 변경
-secret = "ALKsz4UxTvGUfP8A4IgelYxCOnRxyjb8Tcu75mxx"          # 본인 값으로 변경
-myToken = "xoxb-2254769221553-2242120269186-T2xiWO1onhax1k0DjMalBCKb"
+access = ""
+secret = ""
+myToken = ""
 
 def post_message(token, channel, text):
     """슬랙 메시지 전송"""
@@ -57,20 +57,21 @@ while True:
         end_time = start_time + datetime.timedelta(days=1)
 
         for i in portfolio:    
-            if start_time < now < end_time - datetime.timedelta(seconds=300):                 
+            if start_time < now < end_time - datetime.timedelta(seconds=600):                 
                 target_price = get_target_price(i, 0.7)
                 current_price = get_current_price(i)
                 df = pyupbit.get_ohlcv(i, count=1)
-                high_price = df.iloc[0][2]    
+                high_price = df.iloc[0][1]              
                 
                 if target_price < current_price:
-                    krw = get_balance("KRW")                 
+                    krw = get_balance("KRW")
                     
                     if current_price == high_price and krw > 5000:
                         buy_result = upbit.buy_market_order(i, krw*0.9995)
                         post_message(myToken,"#stock", " buy : " +str(buy_result))
                         
                         portfolio.remove(i)      
+                        
             else:
                 portfolio = pyupbit.get_tickers(fiat="KRW")
                         
